@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="27.509" height="24.467" viewBox="0 0 27.509 24.467">
+  <defs>
+    <clipPath id="clip-path">
+      <path id="Arrow_Left" data-name="Arrow Left" d="M11.724,20.708a1.725,1.725,0,0,1,.01,2.286,1.373,1.373,0,0,1-2.08-.007L.436,12.876a1.72,1.72,0,0,1,0-2.288L9.653.478a1.378,1.378,0,0,1,2.08-.007,1.722,1.722,0,0,1-.01,2.286L5.008,10.123H24.93a1.54,1.54,0,0,1,1.47,1.609,1.548,1.548,0,0,1-1.47,1.609H5.008Z" fill="#fff" stroke="#bec2ce" stroke-width="1"/>
+    </clipPath>
+  </defs>
+  <g id="_Icons_Close" data-name="_Icons / Close" transform="translate(0.609 0.5)">
+    <path id="Arrow_Left-2" data-name="Arrow Left" d="M11.724,20.708a1.725,1.725,0,0,1,.01,2.286,1.373,1.373,0,0,1-2.08-.007L.436,12.876a1.72,1.72,0,0,1,0-2.288L9.653.478a1.378,1.378,0,0,1,2.08-.007,1.722,1.722,0,0,1-.01,2.286L5.008,10.123H24.93a1.54,1.54,0,0,1,1.47,1.609,1.548,1.548,0,0,1-1.47,1.609H5.008Z" transform="translate(0 0)" fill="#fff" stroke="#bec2ce" stroke-width="1"/>
+  </g>
+</svg>

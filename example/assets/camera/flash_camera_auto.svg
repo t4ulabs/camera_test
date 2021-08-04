@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="26.61" height="34.741" viewBox="0 0 26.61 34.741">
+  <g id="Group_2212" data-name="Group 2212" transform="translate(5616.61 -1407.259)">
+    <g id="Group_2211" data-name="Group 2211">
+      <path id="Icon_ionic-ios-flash" data-name="Icon ionic-ios-flash" d="M25.729,15.191H18.436l3.532-12.6a.272.272,0,0,0-.485-.229L9.1,18.6a.569.569,0,0,0,.425.9h7.293L13.287,32.1a.272.272,0,0,0,.485.229L26.154,16.1A.575.575,0,0,0,25.729,15.191Z" transform="translate(-5625.097 1405.533)" fill="#fff" stroke="#bec2ce" stroke-width="1"/>
+      <text id="A" transform="translate(-5600 1439)" fill="#fff" font-size="11" font-family="Roboto-Light, Roboto" font-weight="300" letter-spacing="0.021em"><tspan x="0" y="0">A</tspan></text>
+      <g id="Path_3233" data-name="Path 3233" transform="translate(-5603 1429)" fill="none">
+        <path d="M6.5,0A6.5,6.5,0,1,1,0,6.5,6.5,6.5,0,0,1,6.5,0Z" stroke="none"/>
+        <path d="M 6.5 1 C 3.467289924621582 1 1 3.467289924621582 1 6.5 C 1 9.532710075378418 3.467289924621582 12 6.5 12 C 9.532710075378418 12 12 9.532710075378418 12 6.5 C 12 3.467289924621582 9.532710075378418 1 6.5 1 M 6.5 0 C 10.0898494720459 0 13 2.910149574279785 13 6.5 C 13 10.0898494720459 10.0898494720459 13 6.5 13 C 2.910149574279785 13 0 10.0898494720459 0 6.5 C 0 2.910149574279785 2.910149574279785 0 6.5 0 Z" stroke="none" fill="#bec2ce"/>
+      </g>
+    </g>
+  </g>
+</svg>

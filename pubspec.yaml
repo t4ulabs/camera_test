@@ -1,0 +1,29 @@
+name: flutter_better_camera
+description: Flutter plugin for controlling the camera on Android and IOS, supports camera feed, capturing images, capturing videos, streaming image buffers and has support for all the essential features the camera APIs allow (flash, AE and more)
+version: 0.6.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+dev_dependencies:
+  path_provider: ^0.5.0
+  video_player: ^0.10.0
+
+  flutter_test:
+    sdk: flutter
+  flutter_driver:
+    sdk: flutter
+homepage: https://github.com/Lightsnap/flutter-better-camera/
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: io.flutter.plugins.camera
+        pluginClass: CameraPlugin
+      ios:
+        pluginClass: CameraPlugin
+
+environment:
+  sdk: ">=2.12.0 <3.0.0"
+  flutter: 
