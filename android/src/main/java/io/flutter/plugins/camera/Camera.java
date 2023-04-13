@@ -650,12 +650,14 @@ public class Camera {
               if (Camera.this.aeFPSRange != null) {
                 mPreviewRequestBuilder.set(
                         CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Camera.this.aeFPSRange);
-              }
+                        System.out.println("2 zoom value is: " + zoomLevel);
+                      }
               mPreviewRequestBuilder.set(
                   CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-              mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), mCaptureCallback, null);
+                  System.out.println("3 zoom value is: " + zoomLevel);
+                  mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), mCaptureCallback, null);
 
-
+                  System.out.println("4 zoom value is: " + zoomLevel);
               if (onSuccessCallback != null) {
                 onSuccessCallback.run();
               }
@@ -676,7 +678,9 @@ public class Camera {
     surfaceList.add(flutterSurface);
     surfaceList.addAll(remainingSurfaces);
     // Start the session
+    System.out.println("5 zoom value is: " + zoomLevel);
     cameraDevice.createCaptureSession(surfaceList, callback, null);
+    System.out.println("6 zoom value is: " + zoomLevel);
   }
 
 
