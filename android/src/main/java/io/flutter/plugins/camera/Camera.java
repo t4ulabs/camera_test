@@ -678,9 +678,7 @@ public class Camera {
     surfaceList.add(flutterSurface);
     surfaceList.addAll(remainingSurfaces);
     // Start the session
-    System.out.println("5 zoom value is: " + zoomLevel);
     cameraDevice.createCaptureSession(surfaceList, callback, null);
-    System.out.println("6 zoom value is: " + zoomLevel);
   }
 
 
@@ -768,6 +766,7 @@ public class Camera {
           break;
       }
     }
+    mPreviewRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoom);
   }
 
   //NEW THINGIES
