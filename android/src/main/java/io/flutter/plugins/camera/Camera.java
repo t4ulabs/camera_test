@@ -644,6 +644,7 @@ public class Camera {
 
               updateAutoFocus();
               updateFlash();
+              System.out.println("zoom value is: " + zoomLevel);
               //updateWhiteBalance();
 
               if (Camera.this.aeFPSRange != null) {
