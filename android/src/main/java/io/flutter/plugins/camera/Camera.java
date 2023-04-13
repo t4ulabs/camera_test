@@ -645,6 +645,7 @@ public class Camera {
               updateAutoFocus();
               updateFlash();
               System.out.println("zoom value is: " + zoomLevel);
+              updateZommValue();
               //updateWhiteBalance();
 
               if (Camera.this.aeFPSRange != null) {
@@ -766,7 +767,16 @@ public class Camera {
           break;
       }
     }
-    mPreviewRequestBuilder.set(CaptureRequest.SCALER_CROP_REGION, zoom);
+  }
+  void updateZommValue(){
+    switch (zoomLevel) {
+      case zoomLevel = 1f:
+        break;
+      case zoomLevel > 1f:
+      calculateZoom(zoomLevel);
+      setScalerCropRegion(mPreviewRequestBuilder, zoom);
+        break;
+    }
   }
 
   //NEW THINGIES
