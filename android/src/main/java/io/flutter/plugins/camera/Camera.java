@@ -769,14 +769,9 @@ public class Camera {
     }
   }
   void updateZommValue(){
-    switch (zoomLevel) {
-      case zoomLevel = 1f:
-        break;
-      case zoomLevel > 1f:
       calculateZoom(zoomLevel);
       setScalerCropRegion(mPreviewRequestBuilder, zoom);
-        break;
-    }
+    
   }
 
   //NEW THINGIES
