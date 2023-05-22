@@ -822,6 +822,7 @@ public class Camera {
       return;
     }
     try {
+      System.out.println("Current Time: " + time);
       if(time.equals("night")){
         mFlash = Constants.FLASH_TORCH;
         updateFlash();
