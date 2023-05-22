@@ -816,12 +816,17 @@ public class Camera {
     }
   }
 
-  public void startVideoRecording(String filePath, Result result) {
+  public void startVideoRecording(String filePath, String time, Result result) {
     if (new File(filePath).exists()) {
       result.error("fileExists", "File at path '" + filePath + "' already exists.", null);
       return;
     }
     try {
+      if(time.equals("night")){
+        mFlash = Constants.FLASH_TORCH;
+        updateFlash();
+        System.out.println("Current Time: " + mFlash);
+      }
       prepareMediaRecorder(filePath);
       recordingVideo = true;
       createCaptureSession(
