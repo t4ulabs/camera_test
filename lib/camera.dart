@@ -492,7 +492,8 @@ class CameraController extends ValueNotifier<CameraValue> {
   /// The file can be read as soon as [stopVideoRecording] returns.
   ///
   /// Throws a [CameraException] if the capture fails.
-  Future<void> startVideoRecording(String filePath, String time) async {
+  Future<void> startVideoRecording(String filePath, String time,
+      {int orientationIndex = 0}) async {
     if (!value.isInitialized! || _isDisposed) {
       throw CameraException(
         'Uninitialized CameraController',
@@ -518,6 +519,7 @@ class CameraController extends ValueNotifier<CameraValue> {
         <String, dynamic>{
           'textureId': _textureId,
           'filePath': filePath,
+          'orientationIndex': orientationIndex,
           'time': time
         },
       );

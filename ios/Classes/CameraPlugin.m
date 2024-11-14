@@ -2,11 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+
 #import "CameraPlugin.h"
 #import <AVFoundation/AVFoundation.h>
 #import <Accelerate/Accelerate.h>
 #import <CoreMotion/CoreMotion.h>
 #import <libkern/OSAtomic.h>
+#import <UIKit/UIKit.h>
+
 
 static FlutterError *getFlutterError(NSError *error) {
   return [FlutterError errorWithCode:[NSString stringWithFormat:@"Error %d", (int)error.code]
@@ -206,7 +209,9 @@ static ResolutionPreset getResolutionPresetForString(NSString *preset) {
 
 - (void)start;
 - (void)stop;
-- (void)startVideoRecordingAtPath:(NSString *)path result:(FlutterResult)result;
+- (void)startVideoRecordingAtPath:(NSString *)path
+                           result:(FlutterResult)result
+                 orientationIndex:(int)orientationIndex;
 - (void)stopVideoRecordingWithResult:(FlutterResult)result;
 - (void)startImageStreamWithMessenger:(NSObject<FlutterBinaryMessenger> *)messenger;
 - (void)stopImageStream;
@@ -246,8 +251,8 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
     NSLog(@"###: instantiating capture session...");
 
   //_captureDevice = [AVCaptureDevice deviceWithUniqueID:cameraName];
-    
-    
+
+
 
        // 1. Get a list of available devices:
        // specifying AVMediaTypeVideo will ensure we only get a list of cameras, no microphones
@@ -306,7 +311,15 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
   if ([_captureDevice position] == AVCaptureDevicePositionFront) {
     connection.videoMirrored = YES;
   }
-  connection.videoOrientation = AVCaptureVideoOrientationPortrait;
+    if (connection.isVideoOrientationSupported) {
+        // Set the video orientation (portrait in this case)
+        connection.videoOrientation = AVCaptureVideoOrientationPortrait;
+        NSLog(@"### Video orientation set to Portrait.");
+    } else {
+        NSLog(@"### Video orientation is not supported.");
+    }
+    NSLog(@"###: Status isVideoOrientationSupported: %ld", (long)connection.videoOrientation);
+
   [_captureSession addInputWithNoConnections:_captureVideoInput];
   [_captureSession addOutputWithNoConnections:_captureVideoOutput];
   [_captureSession addConnection:connection];
@@ -321,7 +334,7 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
   if (enableAutoExposure) {
     [self setAutoExposureMode:enableAutoExposure];
   }
- 
+
     if(autoFocusEnabled){
         [self setAutoFocus:autoFocusEnabled];
     }
@@ -666,23 +679,34 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
   return nil;
 }
 
-- (void)startVideoRecordingAtPath:(NSString *)path result:(FlutterResult)result {
-  if (!_isRecording) {
-    if (![self setupWriterForPath:path]) {
-      _eventSink(@{@"event" : @"error", @"errorDescription" : @"Setup Writer Failed"});
-      return;
+- (void)startVideoRecordingAtPath:(NSString *)path
+                           result:(FlutterResult)result
+                 orientationIndex:(int)orientationIndex {
+    // Example of using the orientationIndex variable
+    NSLog(@"###: Orientation index received: %d", orientationIndex);
+    
+
+    if (!_isRecording) {
+        if (![self setupWriterForPath:path orientationIndex:orientationIndex]) {
+            _eventSink(@{@"event" : @"error", @"errorDescription" : @"Setup Writer Failed"});
+            return;
+        }
+
+        _isRecording = YES;
+        _isRecordingPaused = NO;
+        _videoTimeOffset = CMTimeMake(0, 1);
+        _audioTimeOffset = CMTimeMake(0, 1);
+        _videoIsDisconnected = NO;
+        _audioIsDisconnected = NO;
+
+    
+
+        result(nil);
+    } else {
+        _eventSink(@{@"event" : @"error", @"errorDescription" : @"Video is already recording!"});
     }
-    _isRecording = YES;
-    _isRecordingPaused = NO;
-    _videoTimeOffset = CMTimeMake(0, 1);
-    _audioTimeOffset = CMTimeMake(0, 1);
-    _videoIsDisconnected = NO;
-    _audioIsDisconnected = NO;
-    result(nil);
-  } else {
-    _eventSink(@{@"event" : @"error", @"errorDescription" : @"Video is already recording!"});
-  }
 }
+
 
 - (void)stopVideoRecordingWithResult:(FlutterResult)result {
   if (_isRecording) {
@@ -818,7 +842,7 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
 
 
 
-- (BOOL)setupWriterForPath:(NSString *)path {
+- (BOOL)setupWriterForPath:(NSString *)path orientationIndex:(int)orientationIndex {
   NSError *error = nil;
   NSURL *outputURL;
   if (path != nil) {
@@ -826,9 +850,13 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
   } else {
     return NO;
   }
+
+  // Set up audio if enabled
   if (_enableAudio && !_isAudioSetup) {
     [self setUpCaptureSessionForAudio];
   }
+
+  // Initialize the video writer
   _videoWriter = [[AVAssetWriter alloc] initWithURL:outputURL
                                            fileType:AVFileTypeQuickTimeMovie
                                               error:&error];
@@ -837,14 +865,48 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
     _eventSink(@{@"event" : @"error", @"errorDescription" : error.description});
     return NO;
   }
-  NSDictionary *videoSettings = [NSDictionary
-      dictionaryWithObjectsAndKeys:AVVideoCodecH264, AVVideoCodecKey,
-                                   [NSNumber numberWithInt:_previewSize.height], AVVideoWidthKey,
-                                   [NSNumber numberWithInt:_previewSize.width], AVVideoHeightKey,
-                                   nil];
-  _videoWriterInput = [AVAssetWriterInput assetWriterInputWithMediaType:AVMediaTypeVideo
-                                                         outputSettings:videoSettings];
 
+  // Video settings for AVAssetWriterInput
+  NSDictionary *videoSettings = @{
+    AVVideoCodecKey : AVVideoCodecH264,
+    AVVideoWidthKey : [NSNumber numberWithInt:_previewSize.height],
+    AVVideoHeightKey : [NSNumber numberWithInt:_previewSize.width],
+  };
+
+  _videoWriterInput = [AVAssetWriterInput assetWriterInputWithMediaType:AVMediaTypeVideo
+                                                           outputSettings:videoSettings];
+     // Log the orientation
+    NSLog(@"###: Device Orientation isisisiis: %d", orientationIndex);
+
+  // Always apply a 90-degree rotation to ensure portrait orientation
+  //CGAffineTransform transform = CGAffineTransformRotate(CGAffineTransformIdentity, -M_PI_2);  // Rotate -90 degrees (portrait)
+    
+    CGAffineTransform transform = CGAffineTransformIdentity;
+       switch (orientationIndex) {
+         case 0:
+           // 0 degrees (no rotation needed)
+           transform = CGAffineTransformIdentity;
+           break;
+         case 1:
+           // 90 degrees
+           transform = CGAffineTransformRotate(CGAffineTransformIdentity, M_PI_2);
+           break;
+         case 2:
+           // 180 degrees
+           transform = CGAffineTransformRotate(CGAffineTransformIdentity, M_PI);
+           break;
+         case 3:
+           // -90 degrees
+           transform = CGAffineTransformRotate(CGAffineTransformIdentity, -M_PI_2);
+           break;
+         default:
+           break;
+       }
+
+  // Apply the transform to the video writer input
+  _videoWriterInput.transform = transform;
+
+  // Set up the video adaptor
   _videoAdaptor = [AVAssetWriterInputPixelBufferAdaptor
       assetWriterInputPixelBufferAdaptorWithAssetWriterInput:_videoWriterInput
                                  sourcePixelBufferAttributes:@{
@@ -854,32 +916,32 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
   NSParameterAssert(_videoWriterInput);
   _videoWriterInput.expectsMediaDataInRealTime = YES;
 
-  // Add the audio input
+  // Set up audio if enabled
   if (_enableAudio) {
     AudioChannelLayout acl;
     bzero(&acl, sizeof(acl));
     acl.mChannelLayoutTag = kAudioChannelLayoutTag_Mono;
-    NSDictionary *audioOutputSettings = nil;
-    // Both type of audio inputs causes output video file to be corrupted.
-    audioOutputSettings = [NSDictionary
+    NSDictionary *audioOutputSettings = [NSDictionary
         dictionaryWithObjectsAndKeys:[NSNumber numberWithInt:kAudioFormatMPEG4AAC], AVFormatIDKey,
                                      [NSNumber numberWithFloat:44100.0], AVSampleRateKey,
                                      [NSNumber numberWithInt:1], AVNumberOfChannelsKey,
                                      [NSData dataWithBytes:&acl length:sizeof(acl)],
                                      AVChannelLayoutKey, nil];
+
     _audioWriterInput = [AVAssetWriterInput assetWriterInputWithMediaType:AVMediaTypeAudio
                                                            outputSettings:audioOutputSettings];
     _audioWriterInput.expectsMediaDataInRealTime = YES;
-
     [_videoWriter addInput:_audioWriterInput];
     [_audioOutput setSampleBufferDelegate:self queue:_dispatchQueue];
   }
 
+  // Add the video input and output to the writer
   [_videoWriter addInput:_videoWriterInput];
   [_captureVideoOutput setSampleBufferDelegate:self queue:_dispatchQueue];
 
   return YES;
 }
+
 - (void)setUpCaptureSessionForAudio {
   NSError *error = nil;
   // Create a device input with the device and add it to the session.
@@ -1132,7 +1194,9 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
       [_camera setUpCaptureSessionForAudio];
       result(nil);
     } else if ([@"startVideoRecording" isEqualToString:call.method]) {
-      [_camera startVideoRecordingAtPath:call.arguments[@"filePath"] result:result];
+        [_camera startVideoRecordingAtPath:call.arguments[@"filePath"]
+                                    result:result
+                          orientationIndex:[call.arguments[@"orientationIndex"] intValue]];
     } else if ([@"stopVideoRecording" isEqualToString:call.method]) {
       [_camera stopVideoRecordingWithResult:result];
     } else {
@@ -1142,3 +1206,4 @@ FourCharCode const videoFormat = kCVPixelFormatType_32BGRA;
 }
 
 @end
+
