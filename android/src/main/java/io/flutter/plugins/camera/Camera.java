@@ -81,8 +81,7 @@ public class Camera {
   private final Size previewSize;
   private final boolean enableAudio;
   private final boolean mFlashSupported;
-  private final boolean mEnableAutoExposure
-          ;
+  private final boolean mEnableAutoExposure;
 
   private CameraDevice cameraDevice;
   private CameraCaptureSession mCaptureSession;
@@ -105,10 +104,7 @@ public class Camera {
   private CameraCharacteristics mCameraCharacteristics;
   private int mWhiteBalance = Constants.WB_AUTO;
   private boolean mManualFocusEngaged = false;
-  private boolean isMeteringAreaAFSupported() {
-        return mCameraCharacteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF) >= 1;
 
-  }
   private Range<Integer> aeFPSRange;
 
   // Mirrors camera.dart
@@ -122,17 +118,17 @@ public class Camera {
   }
 
   public Camera(
-      final Activity activity,
-      final SurfaceTextureEntry flutterTexture,
-      final DartMessenger dartMessenger,
-      final String cameraName,
-      final String resolutionPreset,
-      final boolean enableAudio,
-      final boolean autoFocusEnabled,
-      final boolean enableAutoExposure,
-      final int flashMode
+          final Activity activity,
+          final SurfaceTextureEntry flutterTexture,
+          final DartMessenger dartMessenger,
+          final String cameraName,
+          final String resolutionPreset,
+          final boolean enableAudio,
+          final boolean autoFocusEnabled,
+          final boolean enableAutoExposure,
+          final int flashMode
   )
-      throws CameraAccessException {
+          throws CameraAccessException {
     if (activity == null) {
       throw new IllegalStateException("No activity available!");
     }
@@ -147,16 +143,16 @@ public class Camera {
     this.mFlash = flashMode;
 
     orientationEventListener =
-        new OrientationEventListener(activity.getApplicationContext()) {
-          @Override
-          public void onOrientationChanged(int i) {
-            if (i == ORIENTATION_UNKNOWN) {
-              return;
-            }
-            // Convert the raw deg angle to the nearest multiple of 90.
-            currentOrientation = (int) Math.round(i / 90.0) * 90;
-          }
-        };
+            new OrientationEventListener(activity.getApplicationContext()) {
+              @Override
+              public void onOrientationChanged(int i) {
+                if (i == ORIENTATION_UNKNOWN) {
+                  return;
+                }
+                // Convert the raw deg angle to the nearest multiple of 90.
+                currentOrientation = (int) Math.round(i / 90.0) * 90;
+              }
+            };
     orientationEventListener.enable();
 
     mCameraCharacteristics = cameraManager.getCameraCharacteristics(cameraName);
@@ -173,9 +169,8 @@ public class Camera {
             mCameraCharacteristics.get(CameraCharacteristics.LENS_FACING) == CameraMetadata.LENS_FACING_FRONT;
     ResolutionPreset preset = ResolutionPreset.valueOf(resolutionPreset);
 
-
     recordingProfile =
-        CameraUtils.getBestAvailableCamcorderProfileForResolutionPreset(cameraName, preset);
+            CameraUtils.getBestAvailableCamcorderProfileForResolutionPreset(cameraName, preset);
     captureSize = new Size(recordingProfile.videoFrameWidth, recordingProfile.videoFrameHeight);
     previewSize = computeBestPreviewSize(cameraName, preset);
   }
@@ -227,7 +222,6 @@ public class Camera {
     mediaRecorder.prepare();
   }
 
-
   private void preparePictureImageReader() {
     if (pictureImageReader != null) {
       pictureImageReader.close();
@@ -235,7 +229,6 @@ public class Camera {
     pictureImageReader =
             ImageReader.newInstance(
                     captureSize.getWidth(), captureSize.getHeight(), ImageFormat.JPEG, 2);
-
   }
 
   private void prepareImageStreamReader() {
@@ -246,7 +239,6 @@ public class Camera {
     imageStreamReader =
             ImageReader.newInstance(
                     previewSize.getWidth(), previewSize.getHeight(), ImageFormat.YUV_420_888, 2);
-
   }
 
   @SuppressLint("MissingPermission")
@@ -255,64 +247,64 @@ public class Camera {
     prepareImageStreamReader();
 
     cameraManager.openCamera(
-        cameraName,
-        new CameraDevice.StateCallback() {
-          @Override
-          public void onOpened(@NonNull CameraDevice device) {
-            cameraDevice = device;
-            try {
-              startPreview();
-            } catch (CameraAccessException e) {
-              result.error("CameraAccess", e.getMessage(), null);
-              close();
-              return;
-            }
-            Map<String, Object> reply = new HashMap<>();
-            reply.put("textureId", flutterTexture.id());
-            reply.put("previewWidth", previewSize.getWidth());
-            reply.put("previewHeight", previewSize.getHeight());
-            result.success(reply);
-          }
+            cameraName,
+            new CameraDevice.StateCallback() {
+              @Override
+              public void onOpened(@NonNull CameraDevice device) {
+                cameraDevice = device;
+                try {
+                  startPreview();
+                } catch (CameraAccessException e) {
+                  result.error("CameraAccess", e.getMessage(), null);
+                  close();
+                  return;
+                }
+                Map<String, Object> reply = new HashMap<>();
+                reply.put("textureId", flutterTexture.id());
+                reply.put("previewWidth", previewSize.getWidth());
+                reply.put("previewHeight", previewSize.getHeight());
+                result.success(reply);
+              }
 
-          @Override
-          public void onClosed(@NonNull CameraDevice camera) {
-            dartMessenger.sendCameraClosingEvent();
-            super.onClosed(camera);
-          }
+              @Override
+              public void onClosed(@NonNull CameraDevice camera) {
+                dartMessenger.sendCameraClosingEvent();
+                super.onClosed(camera);
+              }
 
-          @Override
-          public void onDisconnected(@NonNull CameraDevice cameraDevice) {
-            close();
-            dartMessenger.send(DartMessenger.EventType.ERROR, "The camera was disconnected.");
-          }
+              @Override
+              public void onDisconnected(@NonNull CameraDevice cameraDevice) {
+                close();
+                dartMessenger.send(DartMessenger.EventType.ERROR, "The camera was disconnected.");
+              }
 
-          @Override
-          public void onError(@NonNull CameraDevice cameraDevice, int errorCode) {
-            close();
-            String errorDescription;
-            switch (errorCode) {
-              case ERROR_CAMERA_IN_USE:
-                errorDescription = "The camera device is in use already.";
-                break;
-              case ERROR_MAX_CAMERAS_IN_USE:
-                errorDescription = "Max cameras in use";
-                break;
-              case ERROR_CAMERA_DISABLED:
-                errorDescription = "The camera device could not be opened due to a device policy.";
-                break;
-              case ERROR_CAMERA_DEVICE:
-                errorDescription = "The camera device has encountered a fatal error";
-                break;
-              case ERROR_CAMERA_SERVICE:
-                errorDescription = "The camera service has encountered a fatal error.";
-                break;
-              default:
-                errorDescription = "Unknown camera error";
-            }
-            dartMessenger.send(DartMessenger.EventType.ERROR, errorDescription);
-          }
-        },
-        null);
+              @Override
+              public void onError(@NonNull CameraDevice cameraDevice, int errorCode) {
+                close();
+                String errorDescription;
+                switch (errorCode) {
+                  case ERROR_CAMERA_IN_USE:
+                    errorDescription = "The camera device is in use already.";
+                    break;
+                  case ERROR_MAX_CAMERAS_IN_USE:
+                    errorDescription = "Max cameras in use";
+                    break;
+                  case ERROR_CAMERA_DISABLED:
+                    errorDescription = "The camera device could not be opened due to a device policy.";
+                    break;
+                  case ERROR_CAMERA_DEVICE:
+                    errorDescription = "The camera device has encountered a fatal error";
+                    break;
+                  case ERROR_CAMERA_SERVICE:
+                    errorDescription = "The camera service has encountered a fatal error.";
+                    break;
+                  default:
+                    errorDescription = "Unknown camera error";
+                }
+                dartMessenger.send(DartMessenger.EventType.ERROR, errorDescription);
+              }
+            },
+            null);
   }
 
   private void writeToFile(ByteBuffer buffer, File file) throws IOException {
@@ -350,7 +342,6 @@ public class Camera {
     void setState(int state) {
       mState = state;
     }
-
 
     @Override
     public void onCaptureProgressed(@NonNull CameraCaptureSession session,
@@ -452,7 +443,6 @@ public class Camera {
 
   };
 
-
   /**
    * Unlocks the auto-focus and restart camera preview. This is supposed to be called after
    * capturing a still picture.
@@ -466,16 +456,17 @@ public class Camera {
       mCaptureSession.capture(mPreviewRequestBuilder.build(), mCaptureCallback, null);
       updateAutoFocus();
       updateFlash();
-        mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
-                CaptureRequest.CONTROL_AF_TRIGGER_IDLE);
-        mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), mCaptureCallback,
-                null);
-        mCaptureCallback.setState(PictureCaptureCallback.STATE_PREVIEW);
+      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER,
+              CaptureRequest.CONTROL_AF_TRIGGER_IDLE);
+      mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), mCaptureCallback,
+              null);
+      mCaptureCallback.setState(PictureCaptureCallback.STATE_PREVIEW);
 
     } catch (CameraAccessException e) {
       Log.e(TAG, "Failed to restart camera preview.", e);
     }
   }
+
   /**
    * Locks the focus as the first step for a still image capture.
    */
@@ -492,8 +483,7 @@ public class Camera {
     }
   }
 
-
-  public void takePicture(String filePath, @NonNull final Result result){
+  public void takePicture(String filePath, @NonNull final Result result) {
     mCaptureCallback.setFilePath(filePath);
     mCaptureCallback.setResult(result);
     Log.e(TAG, "takePicture");
@@ -503,40 +493,40 @@ public class Camera {
       lockFocus();
     } else {
       Log.e(TAG, "takePicture-noAutoFocus");
-      captureStillPicture(filePath,result);
+      captureStillPicture(filePath, result);
     }
   }
+
   public void captureStillPicture(String filePath, @NonNull final Result result) {
     final File file = new File(filePath);
 
-
     if (file.exists()) {
       result.error(
-          "fileExists", "File at path '" + filePath + "' already exists. Cannot overwrite.", null);
+              "fileExists", "File at path '" + filePath + "' already exists. Cannot overwrite.", null);
       return;
     }
 
     pictureImageReader.setOnImageAvailableListener(
-        reader -> {
-          try (Image image = reader.acquireLatestImage()) {
-            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-            writeToFile(buffer, file);
-            result.success(null);
-          } catch (IOException e) {
-            result.error("IOError", "Failed saving image", null);
-          }
-        },
-        null);
+            reader -> {
+              try (Image image = reader.acquireLatestImage()) {
+                ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                writeToFile(buffer, file);
+                result.success(null);
+              } catch (IOException e) {
+                result.error("IOError", "Failed saving image", null);
+              }
+            },
+            null);
 
     try {
       final CaptureRequest.Builder captureBuilder =
-          cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
+              cameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_STILL_CAPTURE);
       captureBuilder.addTarget(pictureImageReader.getSurface());
 
       captureBuilder.set(CaptureRequest.CONTROL_AF_MODE,
               mPreviewRequestBuilder.get(CaptureRequest.CONTROL_AF_MODE));
 
-      if(mFlashSupported) {
+      if (mFlashSupported) {
         switch (mFlash) {
           case Constants.FLASH_OFF:
             captureBuilder.set(CaptureRequest.CONTROL_AE_MODE,
@@ -565,50 +555,50 @@ public class Camera {
 
       captureBuilder.set(CaptureRequest.JPEG_ORIENTATION, getMediaOrientation());
 
-
       mCaptureSession.capture(
-          captureBuilder.build(),
-          new CameraCaptureSession.CaptureCallback() {
-              @Override
-              public void onCaptureCompleted(@NonNull CameraCaptureSession session,
-                                             @NonNull CaptureRequest request,
-                                             @NonNull TotalCaptureResult result) {
-                Log.d(TAG, "ONCAPTURECOMPLETED");
-                      unlockFocus();
-              }
-            @Override
-            public void onCaptureFailed(
-                @NonNull CameraCaptureSession session,
-                @NonNull CaptureRequest request,
-                @NonNull CaptureFailure failure) {
-              String reason;
-              switch (failure.getReason()) {
-                case CaptureFailure.REASON_ERROR:
-                  reason = "An error happened in the framework";
-                  break;
-                case CaptureFailure.REASON_FLUSHED:
-                  reason = "The capture has failed due to an abortCaptures() call";
-                  break;
-                default:
-                  reason = "Unknown reason";
-              }
-              result.error("captureFailure", reason, null);
-            }
-          },
-          null);
+              captureBuilder.build(),
+              new CameraCaptureSession.CaptureCallback() {
+                @Override
+                public void onCaptureCompleted(@NonNull CameraCaptureSession session,
+                                               @NonNull CaptureRequest request,
+                                               @NonNull TotalCaptureResult result) {
+                  Log.d(TAG, "ONCAPTURECOMPLETED");
+                  unlockFocus();
+                }
+
+                @Override
+                public void onCaptureFailed(
+                        @NonNull CameraCaptureSession session,
+                        @NonNull CaptureRequest request,
+                        @NonNull CaptureFailure failure) {
+                  String reason;
+                  switch (failure.getReason()) {
+                    case CaptureFailure.REASON_ERROR:
+                      reason = "An error happened in the framework";
+                      break;
+                    case CaptureFailure.REASON_FLUSHED:
+                      reason = "The capture has failed due to an abortCaptures() call";
+                      break;
+                    default:
+                      reason = "Unknown reason";
+                  }
+                  result.error("captureFailure", reason, null);
+                }
+              },
+              null);
     } catch (CameraAccessException e) {
       result.error("cameraAccess", e.getMessage(), null);
     }
   }
 
   private void createCaptureSession(int templateType, Surface... surfaces)
-      throws CameraAccessException {
+          throws CameraAccessException {
     createCaptureSession(templateType, null, surfaces);
   }
 
   private void createCaptureSession(
-      int templateType, Runnable onSuccessCallback, Surface... surfaces)
-      throws CameraAccessException {
+          int templateType, Runnable onSuccessCallback, Surface... surfaces)
+          throws CameraAccessException {
     // Close any existing capture session.
     closeCaptureSession();
 
@@ -631,48 +621,56 @@ public class Camera {
 
     // Prepare the callback
     CameraCaptureSession.StateCallback callback =
-        new CameraCaptureSession.StateCallback() {
-          @Override
-          public void onConfigured(@NonNull CameraCaptureSession session) {
-            try {
-              if (cameraDevice == null) {
-                dartMessenger.send(
-                    DartMessenger.EventType.ERROR, "The camera was closed during configuration.");
-                return;
-              }
-              mCaptureSession = session;
+            new CameraCaptureSession.StateCallback() {
+              @Override
+              public void onConfigured(@NonNull CameraCaptureSession session) {
+                try {
+                  if (cameraDevice == null) {
+                    dartMessenger.send(
+                            DartMessenger.EventType.ERROR, "The camera was closed during configuration.");
+                    return;
+                  }
+                  mCaptureSession = session;
 
-              updateAutoFocus();
-              updateFlash();
-              System.out.println("zoom value is: " + zoomLevel);
-              updateZommValue();
-              //updateWhiteBalance();
+                  updateAutoFocus();
+                  updateFlash();
+                  System.out.println("zoom value is: " + zoomLevel);
+                  updateZommValue();
+                  //updateWhiteBalance();
 
-              if (Camera.this.aeFPSRange != null) {
-                mPreviewRequestBuilder.set(
-                        CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Camera.this.aeFPSRange);
-                        System.out.println("2 zoom value is: " + zoomLevel);
-                      }
-              mPreviewRequestBuilder.set(
-                  CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+                  if (Camera.this.aeFPSRange != null) {
+                    mPreviewRequestBuilder.set(
+                            CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Camera.this.aeFPSRange);
+                    System.out.println("2 zoom value is: " + zoomLevel);
+                  }
+                  mPreviewRequestBuilder.set(
+                          CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
                   System.out.println("3 zoom value is: " + zoomLevel);
+
+                  // Add video stabilization for video recording
+                  if (templateType == CameraDevice.TEMPLATE_RECORD && isVideoStabilizationSupported()) {
+                    mPreviewRequestBuilder.set(
+                            CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
+                            CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON);
+                  }
+
                   mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), mCaptureCallback, null);
 
                   System.out.println("4 zoom value is: " + zoomLevel);
-              if (onSuccessCallback != null) {
-                onSuccessCallback.run();
+                  if (onSuccessCallback != null) {
+                    onSuccessCallback.run();
+                  }
+                } catch (CameraAccessException | IllegalStateException | IllegalArgumentException e) {
+                  dartMessenger.send(DartMessenger.EventType.ERROR, e.getMessage());
+                }
               }
-            } catch (CameraAccessException | IllegalStateException | IllegalArgumentException e) {
-              dartMessenger.send(DartMessenger.EventType.ERROR, e.getMessage());
-            }
-          }
 
-          @Override
-          public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
-            dartMessenger.send(
-                DartMessenger.EventType.ERROR, "Failed to configure camera session.");
-          }
-        };
+              @Override
+              public void onConfigureFailed(@NonNull CameraCaptureSession cameraCaptureSession) {
+                dartMessenger.send(
+                        DartMessenger.EventType.ERROR, "Failed to configure camera session.");
+              }
+            };
 
     // Collect all surfaces we want to render to.
     List<Surface> surfaceList = new ArrayList<>();
@@ -681,7 +679,6 @@ public class Camera {
     // Start the session
     cameraDevice.createCaptureSession(surfaceList, callback, null);
   }
-
 
   /**
    * Updates the internal state of white balance to {@link #mWhiteBalance}.
@@ -734,13 +731,12 @@ public class Camera {
     }
   }
 
-
   /**
    * Updates the internal state of flash to {@link #mFlash}.
    */
   void updateFlash() {
-    Log.d(TAG, "updateFlash: "+mFlash);
-    if(mFlashSupported) {
+    Log.d(TAG, "updateFlash: " + mFlash);
+    if (mFlashSupported) {
       switch (mFlash) {
         case Constants.FLASH_OFF:
           Log.d(TAG, "updateFlash: off flash");
@@ -768,10 +764,10 @@ public class Camera {
       }
     }
   }
-  void updateZommValue(){
-      calculateZoom(zoomLevel);
-      setScalerCropRegion(mPreviewRequestBuilder, zoom);
-    
+
+  void updateZommValue() {
+    calculateZoom(zoomLevel);
+    setScalerCropRegion(mPreviewRequestBuilder, zoom);
   }
 
   //NEW THINGIES
@@ -799,7 +795,7 @@ public class Camera {
     if (mAutoFocus == autoFocus) {
       return;
     }
-    Log.d( "AUTO FOCUD", "setAutoFocus");
+    Log.d("AUTO FOCUD", "setAutoFocus");
 
     mAutoFocus = autoFocus;
     if (mPreviewRequestBuilder != null) {
@@ -808,7 +804,6 @@ public class Camera {
         try {
           //mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), mCaptureCallback, null);
           mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), mCaptureCallback, null);
-
         } catch (CameraAccessException e) {
           mAutoFocus = !mAutoFocus; // Revert
         }
@@ -823,7 +818,7 @@ public class Camera {
     }
     try {
       System.out.println("Current Time: " + time);
-      if(time.equals("night")){
+      if (time.equals("night")) {
         mFlash = Constants.FLASH_TORCH;
         updateFlash();
         System.out.println("Current Time: " + mFlash);
@@ -831,7 +826,7 @@ public class Camera {
       prepareMediaRecorder(filePath);
       recordingVideo = true;
       createCaptureSession(
-          CameraDevice.TEMPLATE_RECORD, () -> mediaRecorder.start(), mediaRecorder.getSurface());
+              CameraDevice.TEMPLATE_RECORD, () -> mediaRecorder.start(), mediaRecorder.getSurface());
       result.success(null);
     } catch (CameraAccessException | IOException e) {
       result.error("videoRecordingFailed", e.getMessage(), null);
@@ -887,7 +882,7 @@ public class Camera {
         mediaRecorder.resume();
       } else {
         result.error(
-            "videoRecordingFailed", "resumeVideoRecording requires Android API +24.", null);
+                "videoRecordingFailed", "resumeVideoRecording requires Android API +24.", null);
         return;
       }
     } catch (IllegalStateException e) {
@@ -899,59 +894,59 @@ public class Camera {
   }
 
   public void startPreview() throws CameraAccessException {
-    if(pictureImageReader != null)
-    createCaptureSession(CameraDevice.TEMPLATE_PREVIEW, pictureImageReader.getSurface());
+    if (pictureImageReader != null)
+      createCaptureSession(CameraDevice.TEMPLATE_PREVIEW, pictureImageReader.getSurface());
   }
 
   public void startPreviewWithImageStream(EventChannel imageStreamChannel)
-      throws CameraAccessException {
+          throws CameraAccessException {
     createCaptureSession(CameraDevice.TEMPLATE_RECORD, imageStreamReader.getSurface());
 
     imageStreamChannel.setStreamHandler(
-        new EventChannel.StreamHandler() {
-          @Override
-          public void onListen(Object o, EventChannel.EventSink imageStreamSink) {
-            setImageStreamImageAvailableListener(imageStreamSink);
-          }
+            new EventChannel.StreamHandler() {
+              @Override
+              public void onListen(Object o, EventChannel.EventSink imageStreamSink) {
+                setImageStreamImageAvailableListener(imageStreamSink);
+              }
 
-          @Override
-          public void onCancel(Object o) {
-            imageStreamReader.setOnImageAvailableListener(null, null);
-          }
-        });
+              @Override
+              public void onCancel(Object o) {
+                imageStreamReader.setOnImageAvailableListener(null, null);
+              }
+            });
   }
 
   private void setImageStreamImageAvailableListener(final EventChannel.EventSink imageStreamSink) {
     imageStreamReader.setOnImageAvailableListener(
-        reader -> {
-          Image img = reader.acquireLatestImage();
-          if (img == null) return;
+            reader -> {
+              Image img = reader.acquireLatestImage();
+              if (img == null) return;
 
-          List<Map<String, Object>> planes = new ArrayList<>();
-          for (Image.Plane plane : img.getPlanes()) {
-            ByteBuffer buffer = plane.getBuffer();
+              List<Map<String, Object>> planes = new ArrayList<>();
+              for (Image.Plane plane : img.getPlanes()) {
+                ByteBuffer buffer = plane.getBuffer();
 
-            byte[] bytes = new byte[buffer.remaining()];
-            buffer.get(bytes, 0, bytes.length);
+                byte[] bytes = new byte[buffer.remaining()];
+                buffer.get(bytes, 0, bytes.length);
 
-            Map<String, Object> planeBuffer = new HashMap<>();
-            planeBuffer.put("bytesPerRow", plane.getRowStride());
-            planeBuffer.put("bytesPerPixel", plane.getPixelStride());
-            planeBuffer.put("bytes", bytes);
+                Map<String, Object> planeBuffer = new HashMap<>();
+                planeBuffer.put("bytesPerRow", plane.getRowStride());
+                planeBuffer.put("bytesPerPixel", plane.getPixelStride());
+                planeBuffer.put("bytes", bytes);
 
-            planes.add(planeBuffer);
-          }
+                planes.add(planeBuffer);
+              }
 
-          Map<String, Object> imageBuffer = new HashMap<>();
-          imageBuffer.put("width", img.getWidth());
-          imageBuffer.put("height", img.getHeight());
-          imageBuffer.put("format", img.getFormat());
-          imageBuffer.put("planes", planes);
+              Map<String, Object> imageBuffer = new HashMap<>();
+              imageBuffer.put("width", img.getWidth());
+              imageBuffer.put("height", img.getHeight());
+              imageBuffer.put("format", img.getFormat());
+              imageBuffer.put("planes", planes);
 
-          imageStreamSink.success(imageBuffer);
-          img.close();
-        },
-        null);
+              imageStreamSink.success(imageBuffer);
+              img.close();
+            },
+            null);
   }
 
   private void closeCaptureSession() {
@@ -989,94 +984,88 @@ public class Camera {
     orientationEventListener.disable();
   }
 
-    public boolean focusToPoint(double offsetX, double offsetY) throws CameraAccessException {
-//TODO this is ubllshit
-/*        if (mManualFocusEngaged) {
-            Log.d(TAG, "Manual focus already engaged");
-            return true;
-        }*/
+  public boolean focusToPoint(double offsetX, double offsetY) throws CameraAccessException {
+    //TODO this is ubllshit
+    /*        if (mManualFocusEngaged) {
+                Log.d(TAG, "Manual focus already engaged");
+                return true;
+            }*/
 
-        //final Rect sensorArraySize = mCameraInfo.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
-/*
-        Log.d(previewSize, "Manual focus already engaged");
-        Log.d(sensorArraySize.height(), "Manual focus already engaged");*/
-        final Rect sensorArraySize = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+    //final Rect sensorArraySize = mCameraInfo.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
+    /*
+            Log.d(previewSize, "Manual focus already engaged");
+            Log.d(sensorArraySize.height(), "Manual focus already engaged");*/
+    final Rect sensorArraySize = mCameraCharacteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE);
 
-        final int x = (int)(offsetX  * (float)sensorArraySize.height());
-        final int y = (int)(offsetY * (float)sensorArraySize.width());
+    final int x = (int) (offsetX * (float) sensorArraySize.height());
+    final int y = (int) (offsetY * (float) sensorArraySize.width());
 
+    final int halfTouchWidth = 150; //(int)motionEvent.getTouchMajor(); //TODO: this doesn't represent actual touch size in pixel. Values range in [3, 10]...
+    final int halfTouchHeight = 150; //(int)motionEvent.getTouchMinor();
+    MeteringRectangle focusAreaTouch = new MeteringRectangle(Math.max(x - halfTouchWidth, 0),
+            Math.max(y - halfTouchHeight, 0),
+            halfTouchWidth * 2,
+            halfTouchHeight * 2,
+            MeteringRectangle.METERING_WEIGHT_MAX - 1);
 
+    CameraCaptureSession.CaptureCallback captureCallbackHandler = new CameraCaptureSession.CaptureCallback() {
+      @Override
+      public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
+        super.onCaptureCompleted(session, request, result);
+        mManualFocusEngaged = false;
+        Log.i("baba", "babababa");
+        if (request.getTag() == "FOCUS_TAG") {
+          Log.i("baba", "FOCUS_TAG");
 
-        final int halfTouchWidth = 150; //(int)motionEvent.getTouchMajor(); //TODO: this doesn't represent actual touch size in pixel. Values range in [3, 10]...
-        final int halfTouchHeight = 150; //(int)motionEvent.getTouchMinor();
-        MeteringRectangle focusAreaTouch = new MeteringRectangle(Math.max(x - halfTouchWidth, 0),
-                Math.max(y - halfTouchHeight, 0),
-                halfTouchWidth * 2,
-                halfTouchHeight * 2,
-                MeteringRectangle.METERING_WEIGHT_MAX - 1);
-
-
-
-        CameraCaptureSession.CaptureCallback captureCallbackHandler = new CameraCaptureSession.CaptureCallback() {
-            @Override
-            public void onCaptureCompleted(CameraCaptureSession session, CaptureRequest request, TotalCaptureResult result) {
-                super.onCaptureCompleted(session, request, result);
-                mManualFocusEngaged = false;
-                Log.i("baba", "babababa");
-                if (request.getTag() == "FOCUS_TAG") {
-                  Log.i("baba", "FOCUS_TAG");
-
-                  //the focus trigger is complete -
-                    //resume repeating (preview surface will get frames), clear AF trigger
-                    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
-                    try {
-                        mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), null, null);
-                    } catch (CameraAccessException e) {
-                        e.printStackTrace();
-                    }
-                }
-            }
-
-            @Override
-            public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request, CaptureFailure failure) {
-                super.onCaptureFailed(session, request, failure);
-                Log.e(TAG, "Manual AF failure: " + failure);
-                mManualFocusEngaged = false;
-            }
-        };
-
-        //first stop the existing repeating request
-        try {
-            mCaptureSession.stopRepeating();
-        } catch (CameraAccessException e) {
-          Log.d(TAG, "BABAB", e);
-            Log.e(TAG, "Failed to manual focus.", e);
+          //the focus trigger is complete -
+          //resume repeating (preview surface will get frames), clear AF trigger
+          mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, null);
+          try {
+            mCaptureSession.setRepeatingRequest(mPreviewRequestBuilder.build(), null, null);
+          } catch (CameraAccessException e) {
+            e.printStackTrace();
+          }
         }
+      }
 
-        //cancel any existing AF trigger (repeated touches, etc.)
-      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
-      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
-      mCaptureSession.capture(mPreviewRequestBuilder.build(), captureCallbackHandler, null);
+      @Override
+      public void onCaptureFailed(CameraCaptureSession session, CaptureRequest request, CaptureFailure failure) {
+        super.onCaptureFailed(session, request, failure);
+        Log.e(TAG, "Manual AF failure: " + failure);
+        mManualFocusEngaged = false;
+      }
+    };
 
-        //Now add a new AF trigger with focus region
-        if (isMeteringAreaAFSupported()) {
-          mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, new MeteringRectangle[]{focusAreaTouch});
-        }
-      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
-      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
-      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
-      mPreviewRequestBuilder.setTag("FOCUS_TAG"); //we'll capture this later for resuming the preview
-
-        Log.i("Test", "Test");
-
-        //then we ask for a single request (not repeating!)
-        mCaptureSession.capture(mPreviewRequestBuilder.build(), captureCallbackHandler, null);
-        mManualFocusEngaged = true;
-
-        return true;
-
+    //first stop the existing repeating request
+    try {
+      mCaptureSession.stopRepeating();
+    } catch (CameraAccessException e) {
+      Log.d(TAG, "BABAB", e);
+      Log.e(TAG, "Failed to manual focus.", e);
     }
 
+    //cancel any existing AF trigger (repeated touches, etc.)
+    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_CANCEL);
+    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_OFF);
+    mCaptureSession.capture(mPreviewRequestBuilder.build(), captureCallbackHandler, null);
+
+    //Now add a new AF trigger with focus region
+    if (isMeteringAreaAFSupported()) {
+      mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_REGIONS, new MeteringRectangle[]{focusAreaTouch});
+    }
+    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_MODE, CameraMetadata.CONTROL_MODE_AUTO);
+    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_MODE, CaptureRequest.CONTROL_AF_MODE_AUTO);
+    mPreviewRequestBuilder.set(CaptureRequest.CONTROL_AF_TRIGGER, CameraMetadata.CONTROL_AF_TRIGGER_START);
+    mPreviewRequestBuilder.setTag("FOCUS_TAG"); //we'll capture this later for resuming the preview
+
+    Log.i("Test", "Test");
+
+    //then we ask for a single request (not repeating!)
+    mCaptureSession.capture(mPreviewRequestBuilder.build(), captureCallbackHandler, null);
+    mManualFocusEngaged = true;
+
+    return true;
+  }
 
   public void zoom(double step) throws CameraAccessException {
     changeZoom((float) step);
@@ -1089,7 +1078,6 @@ public class Camera {
   }
 
   private void calculateZoom(float step) {
-
     zoomLevel = step;
 
     if (zoomLevel < 1f) {
@@ -1103,11 +1091,11 @@ public class Camera {
     int croppedWidth = rect.width() - Math.round((float) rect.width() * ratio);
     int croppedHeight = rect.height() - Math.round((float) rect.height() * ratio);
     zoom =
-        new Rect(
-            croppedWidth / 2,
-            croppedHeight / 2,
-            rect.width() - croppedWidth / 2,
-            rect.height() - croppedHeight / 2);
+            new Rect(
+                    croppedWidth / 2,
+                    croppedHeight / 2,
+                    rect.width() - croppedWidth / 2,
+                    rect.height() - croppedHeight / 2);
   }
 
   private void setScalerCropRegion(CaptureRequest.Builder captureRequestBuilder, Rect zoom) {
@@ -1116,10 +1104,27 @@ public class Camera {
 
   private int getMediaOrientation() {
     final int sensorOrientationOffset =
-        (currentOrientation == ORIENTATION_UNKNOWN)
-            ? 0
-            : (isFrontFacing) ? currentOrientation : currentOrientation;
-    Log.e(TAG, "<<< getMediaOrientation: "+(sensorOrientationOffset + sensorOrientation + 360) % 360);
+            (currentOrientation == ORIENTATION_UNKNOWN)
+                    ? 0
+                    : (isFrontFacing) ? currentOrientation : currentOrientation;
+    Log.e(TAG, "<<< getMediaOrientation: " + (sensorOrientationOffset + sensorOrientation + 360) % 360);
     return (sensorOrientationOffset + sensorOrientation + 360) % 360;
+  }
+
+  private boolean isMeteringAreaAFSupported() {
+    return mCameraCharacteristics.get(CameraCharacteristics.CONTROL_MAX_REGIONS_AF) >= 1;
+  }
+
+  private boolean isVideoStabilizationSupported() {
+    int[] availableModes = mCameraCharacteristics.get(CameraCharacteristics.CONTROL_AVAILABLE_VIDEO_STABILIZATION_MODES);
+    if (availableModes == null) {
+      return false;
+    }
+    for (int mode : availableModes) {
+      if (mode == CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_ON) {
+        return true;
+      }
+    }
+    return false;
   }
 }
